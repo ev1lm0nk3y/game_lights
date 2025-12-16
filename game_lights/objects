@@ -1,0 +1,33 @@
+StripGroup
+  beginLEDNumber
+  endLEDNumber
+  table_position
+
+Player
+  game_position
+  StripGroup
+  defaultColor
+
+TableConfig
+  total_players
+  StripGroups
+
+Game
+  players
+  current_start_position
+  computer_player
+  max_turns
+  current_turn
+  game_stats_stripgroup
+
+Pattern
+  AnimationSteps
+  duration_secs
+  clear_before
+  clear_after
+
+AnimationStep
+  brightness
+  ColorArray
+
+

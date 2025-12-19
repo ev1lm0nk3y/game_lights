@@ -8,14 +8,19 @@ This project is a Python-based controller for WS281x LED strips, designed specif
 ### Core Logic (`game_lights/`)
 *   **`game_lights/__init__.py`**: Indicates that `game_lights` is a Python package.
 *   **`game_lights/pixel.py`**: Defines the `Pixel` class, representing a single LED. It manages patterns, colors, and loops for individual pixels.
-*   **`game_lights/strip.py`**: Defines `StripSegment`, representing a logical grouping of LEDs (e.g., a specific side of the table).
-*   **`game_lights/table.py`**: Contains the `TablePosition` enum, which maps code constants to physical locations (e.g., `GAMEMASTER`, `WALL_1`).
-*   **`game_lights/animations.py`**: Defines `AnimationFrame` for orchestrating lighting effects (currently incomplete).
-*   **`game_lights/objects`**: A text file containing preliminary data structure or class definitions.
+*   **`game_lights/strip.py`**: Defines `StripSegment`, representing a logical grouping of LEDs.
+*   **`game_lights/table.py`**: Contains the `TablePosition` enum.
+*   **`game_lights/animations.py`**: Defines `AnimationFrame`.
+*   **`game_lights/config.py`**: Handles loading and saving the LED configuration to `config.json`.
+*   **`game_lights/objects`**: Preliminary data definitions.
+
+### Entry Point
+*   **`main.py`**: The CLI entry point. Supports `program` mode to interactively define strip segments and save them to `config.json`.
 
 ### Configuration & Environment
-*   **`.gitignore`**: Configured to ignore the virtual environment (`bin/`, `lib/`, etc.) and build artifacts.
-*   **`bin/`, `lib/`, `pyvenv.cfg`**: The local Python Virtual Environment (ignored by git).
+*   **`config.json`**: Stores the physical layout of the LEDs (mapped to TablePositions) and key bindings.
+*   **`.gitignore`**: Configured to ignore the virtual environment.
+*   **`bin/`, `lib/`, `pyvenv.cfg`**: The local Python Virtual Environment.
 
 ## Dependencies
 *   **`rpi_ws281x`**: The core library used to interface with the LED hardware on a Raspberry Pi.

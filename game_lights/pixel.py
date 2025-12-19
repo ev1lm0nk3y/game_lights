@@ -1,9 +1,31 @@
 """Control one LED"""
 
 from dataclasses import dataclass, field
-from rpi_ws281x import PixelStrip, Color, RGBW
 
-from patterns import Pattern
+from rpi_ws281x import RGBW, Color, PixelStrip
+
+from .patterns import Pattern
+
+
+@dataclass
+class Colors:
+    RED: int = Color(255, 0, 0)
+    ORANGE: int = Color(255, 165, 0)
+    YELLOW: int = Color(255, 255, 0)
+    GREEN: int = Color(0, 255, 0)
+    BLUE: int = Color(0, 0, 255)
+    INDIGO: int = Color(75, 0, 130)
+    VIOLET: int = Color(238, 130, 238)
+    PURPLE: int = Color(128, 0, 128)
+    CYAN: int = Color(0, 255, 255)
+    MAGENTA: int = Color(255, 0, 255)
+    WHITE: int = Color(255, 255, 255)
+    BLACK: int = Color(0, 0, 0)
+    GOLD: int = Color(255, 215, 0)
+    PINK: int = Color(255, 192, 203)
+    TEAL: int = Color(0, 128, 128)
+    LIME: int = Color(50, 205, 50)
+
 
 @dataclass
 class Pixel:
@@ -28,9 +50,9 @@ class Pixel:
         if self._active:
             print('cannot add pattern while active')
             return
-        self._steps += pattern.generate(self._current, 
+        self._steps += pattern.generate(self._current,
                                         kwargs.get('num_loops', 1))
-        
+
     def reset(self):
         self._active = False
         self._steps = []
@@ -57,7 +79,7 @@ class Pixel:
             self._current = self._steps[self._step_num]
             self._step_num += 1
         return self._current
-        
+
     def __str__(self) -> str:
         r, g, b, w = self.strip.getPixelColorRGBW(self.idx)
         return f'LED {self.idx}: RGBW({r}, {g}, {b}, {w})'

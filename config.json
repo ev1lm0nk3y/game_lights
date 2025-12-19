@@ -1,0 +1,45 @@
+{
+    "layout": [
+        {"position": "GAMEMASTER", "start": 0, "end": 29},
+        {"position": "WALL_1", "start": 30, "end": 59},
+        {"position": "WALL_2", "start": 60, "end": 89},
+        {"position": "WINDOW", "start": 90, "end": 119}
+    ],
+    "key_bindings": {
+        "1": {
+            "action": "queue",
+            "target": "GAMEMASTER",
+            "animation": "Chase",
+            "params": {"color": "RED", "tail_length": 5}
+        },
+        "2": {
+            "action": "queue",
+            "target": "GAMEMASTER",
+            "animation": "Blink",
+            "params": {"color": "GREEN", "duration": 5}
+        },
+        "3": {
+            "action": "queue",
+            "target": "WALL_1",
+            "animation": "FadeInOut",
+            "params": {"color": "BLUE", "duration": 20}
+        },
+        "4": {
+            "action": "queue",
+            "target": "WINDOW",
+            "animation": "Rainbow",
+            "params": {"speed": 5}
+        },
+        "space": {
+            "action": "trigger_all",
+            "target": "ALL"
+        },
+        "c": {
+            "action": "clear",
+            "target": "ALL"
+        },
+        "q": {
+            "action": "quit"
+        }
+    }
+}

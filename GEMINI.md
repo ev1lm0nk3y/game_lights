@@ -10,7 +10,9 @@ This project is a Python-based controller for WS281x LED strips, designed specif
 *   **`game_lights/pixel.py`**: Defines the `Pixel` class, representing a single LED. It manages patterns, colors, and loops for individual pixels.
 *   **`game_lights/strip.py`**: Defines `StripSegment`, representing a logical grouping of LEDs.
 *   **`game_lights/table.py`**: Contains the `TablePosition` enum.
-*   **`game_lights/animations.py`**: Defines `AnimationFrame`.
+*   **`game_lights/animations.py`**: Defines `AnimationFrame` for orchestrating lighting effects (currently incomplete).
+*   **`game_lights/patterns.py`**: Contains pattern generation logic (e.g., `Rainbow`, `Chase`).
+*   **`game_lights/controller.py`**: Likely the main logic for controlling the lights during runtime.
 *   **`game_lights/config.py`**: Handles loading and saving the LED configuration to `config.json`.
 *   **`game_lights/objects`**: Preliminary data definitions.
 

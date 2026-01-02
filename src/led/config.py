@@ -1,6 +1,5 @@
 import json
 import os
-from dataclasses import asdict
 from typing import Any, Dict, List, Optional
 
 from .models import CalculatedSegment, Layout, SegmentDefinition, Table, TableSide
@@ -184,7 +183,7 @@ def _legacy_load(filename):
                         StripSegment(int(start), int(end), TablePosition[pos_name])
                     )
             return segments
-    except:
+    except Exception:
         return []
 
 

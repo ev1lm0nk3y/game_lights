@@ -22,4 +22,5 @@ packages = ["src/led", "src/cli"]
 [dependency-groups]
 dev = [
     "ipykernel>=7.1.0",
+    "uv>=0.9.21",
 ]

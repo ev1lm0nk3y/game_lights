@@ -1,6 +1,8 @@
 import argparse
 import sys
 
+from InquirerPy import inquirer
+
 from cli import setup
 from led import config
 from led.controller import Controller
@@ -68,28 +70,28 @@ def program_mode():
 
 def setup_mode():
     while True:
-        print("\n=== Setup Menu ===")
-        print("1. Create/Update Table")
-        print("2. Create/Update Layout")
-        print("3. List Configuration")
-        print("4. Legacy Program Mode")
-        print("0. Exit")
-
-        choice = input("Select option: ")
+        choice = inquirer.select(
+            message="Setup Menu",
+            choices=[
+                "Create/Update Table",
+                "Create/Update Layout",
+                "List Configuration",
+                "Legacy Program Mode",
+                "Exit"
+            ]
+        ).execute()
 
         match choice:
-            case "1":
+            case "Create/Update Table":
                 setup.create_table_wizard()
-            case "2":
+            case "Create/Update Layout":
                 setup.create_layout_wizard()
-            case "3":
+            case "List Configuration":
                 setup.list_config()
-            case "4":
+            case "Legacy Program Mode":
                 program_mode()
-            case "0":
+            case "Exit":
                 break
-            case _:
-                print("Invalid option.")
 
 def main():
     parser = argparse.ArgumentParser(description="Game Lights Controller")

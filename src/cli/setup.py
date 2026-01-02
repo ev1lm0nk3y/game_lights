@@ -1,54 +1,72 @@
+from InquirerPy import inquirer
+from InquirerPy.validator import EmptyInputValidator, NumberValidator
+
 from led.config import ConfigManager
 from led.models import Layout, SegmentDefinition, Table, TableSide
 
 
-def input_float(prompt: str) -> float:
-    while True:
-        try:
-            return float(input(prompt))
-        except ValueError:
-            print("Please enter a valid number.")
-
-def input_int(prompt: str) -> int:
-    while True:
-        try:
-            return int(input(prompt))
-        except ValueError:
-            print("Please enter a valid integer.")
-
 def create_table_wizard():
     print("\n--- Create New Table ---")
-    name = input("Table Name (e.g., 'primary'): ").strip()
-    if not name: return
+    name = inquirer.text(
+        message="Table Name:",
+        default="primary",
+        validate=EmptyInputValidator()
+    ).execute()
 
-    width = input_float("Width (meters): ")
-    length = input_float("Length (meters): ")
-    ppm = input_int("Pixels per Meter (e.g., 30, 60): ")
+    width = inquirer.number(
+        message="Width (meters):",
+        float_allowed=True,
+        validate=NumberValidator(float_allowed=True, min_value=0.1)
+    ).execute()
 
-    table = Table(name, width, length, ppm)
+    length = inquirer.number(
+        message="Length (meters):",
+        float_allowed=True,
+        validate=NumberValidator(float_allowed=True, min_value=0.1)
+    ).execute()
+
+    ppm = inquirer.number(
+        message="Pixels per Meter:",
+        float_allowed=False,
+        default=60,
+        validate=NumberValidator(float_allowed=False, min_value=1)
+    ).execute()
+
+    table = Table(name, float(width), float(length), int(ppm))
 
     print("\nDefine Sides (Order matters! Start from where the strip connects)")
 
-    # Suggested default sides?
-    print("Standard rectangular table has 4 sides.")
-
     while True:
-        side_name = input(f"Side {len(table.sides) + 1} Name (or 'done'): ").strip()
-        if side_name.lower() == 'done':
-            break
-
-        # Auto-suggest length based on count?
-        # 0->width, 1->length, 2->width, 3->length
+        # Suggest length
         suggested_len = 0.0
         if len(table.sides) % 2 == 0:
             suggested_len = width
         else:
             suggested_len = length
 
-        s_len_in = input(f"Side Length [default: {suggested_len}]: ").strip()
-        s_len = float(s_len_in) if s_len_in else suggested_len
+        add_side = inquirer.confirm(
+            message=f"Add side {len(table.sides) + 1}?", default=True
+        ).execute()
 
-        table.sides.append(TableSide(side_name, s_len, len(table.sides)))
+        if not add_side:
+            if len(table.sides) < 3:
+                 if not inquirer.confirm("Table has fewer than 3 sides. Are you sure you are done?", default=False).execute():
+                     continue
+            break
+
+        side_name = inquirer.text(
+            message="Side Name:",
+            validate=EmptyInputValidator()
+        ).execute()
+
+        s_len = inquirer.number(
+            message=f"Side Length (meters):",
+            default=float(suggested_len),
+            float_allowed=True,
+            validate=NumberValidator(float_allowed=True, min_value=0.1)
+        ).execute()
+
+        table.sides.append(TableSide(side_name, float(s_len), len(table.sides)))
 
     cm = ConfigManager()
     cm.save_table(table)
@@ -62,58 +80,67 @@ def create_layout_wizard():
         print("No tables defined. Create a table first.")
         return
 
-    print("Available Tables:")
-    for t_name in tables:
-        print(f"- {t_name}")
-
-    t_name = input("Select Table: ").strip()
-    if t_name not in tables:
-        print("Invalid table.")
-        return
+    t_name = inquirer.select(
+        message="Select Table:",
+        choices=list(tables.keys())
+    ).execute()
 
     table = tables[t_name]
-    l_name = input("Layout Name (e.g., '6_player'): ").strip()
+
+    l_name = inquirer.text(
+        message="Layout Name:",
+        default="6_player",
+        validate=EmptyInputValidator()
+    ).execute()
+
     layout = Layout(l_name, t_name)
 
     while True:
-        print(f"\nCurrent Segments: {len(layout.segments)}")
-        print("Sides:", ", ".join(s.name for s in table.sides))
+        action = inquirer.select(
+            message="Layout Action:",
+            choices=[
+                "Add Segment",
+                "Finish"
+            ]
+        ).execute()
 
-        cmd = input("Action (add/done): ").lower().strip()
-        if cmd == 'done':
+        if action == "Finish":
             break
 
-        if cmd == 'add':
-            seg_name = input("Segment Name: ").strip()
-            side = input("Side Name: ").strip()
+        seg_name = inquirer.text(message="Segment Name:", validate=EmptyInputValidator()).execute()
 
-            if not table.get_side(side):
-                print(f"Side '{side}' does not exist on table '{t_name}'.")
-                continue
+        side_choices = [s.name for s in table.sides]
+        side = inquirer.select(message="Side Name:", choices=side_choices).execute()
 
-            width = input_int("Width (pixels): ")
+        width = inquirer.number(
+            message="Width (pixels):",
+            validate=NumberValidator(min_value=1)
+        ).execute()
 
-            print("Strategies: center, even, absolute")
-            strat = input("Position Strategy [center]: ").strip().lower() or "center"
+        strat = inquirer.select(
+            message="Position Strategy:",
+            choices=["center", "even", "absolute"],
+            default="center"
+        ).execute()
 
-            order = 0
-            offset = 0
-            match strat:
-                case "even":
-                    order = input_int("Order index (0=first, 1=second...): ")
-                case "absolute":
-                    offset = input_int("Offset from start of side (pixels): ")
+        order = 0
+        offset = 0
 
-            layout.segments.append(SegmentDefinition(
-                seg_name, side, width, strat, order, offset
-            ))
-            print(f"Added {seg_name}.")
+        match strat:
+            case "even":
+                order = inquirer.number(message="Order index (0=first, ...):", default=0).execute()
+            case "absolute":
+                offset = inquirer.number(message="Offset from start (pixels):", default=0).execute()
+
+        layout.segments.append(SegmentDefinition(
+            seg_name, side, int(width), strat, int(order), int(offset)
+        ))
+        print(f"Added {seg_name}.")
 
     cm.save_layout(layout)
     print(f"Layout '{l_name}' saved.")
 
-    activate = input("Set as active layout? (y/n): ").lower()
-    if activate == 'y':
+    if inquirer.confirm("Set as active layout?", default=True).execute():
         cm.set_active(t_name, l_name)
         print("Active configuration updated.")
 

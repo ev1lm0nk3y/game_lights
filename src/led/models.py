@@ -13,6 +13,7 @@ class TableSide:
     end_pixel_index: int = 0
     total_pixels: int = 0
 
+
 @dataclass
 class SegmentDefinition:
     name: str
@@ -20,8 +21,9 @@ class SegmentDefinition:
     width_pixels: int
     # positioning: "center", "even", "absolute" (start_offset)
     strategy: Literal["center", "even", "absolute"] = "center"
-    order_index: int = 0 # For "even" distribution relative order
-    offset_pixels: int = 0 # For "absolute" strategy
+    order_index: int = 0  # For "even" distribution relative order
+    offset_pixels: int = 0  # For "absolute" strategy
+
 
 @dataclass
 class CalculatedSegment:
@@ -30,13 +32,14 @@ class CalculatedSegment:
     end_led: int
     side_name: str
 
+
 @dataclass
 class Layout:
     name: str
     table_name: str
     segments: List[SegmentDefinition] = field(default_factory=list)
 
-    def calculate_segments(self, table: 'Table') -> List[CalculatedSegment]:
+    def calculate_segments(self, table: "Table") -> List[CalculatedSegment]:
         calculated = []
 
         # Group segments by side
@@ -71,7 +74,9 @@ class Layout:
                 total_seg_width = sum(s.width_pixels for s in even_segs)
                 available_space = side_len - total_seg_width
                 if available_space < 0:
-                    print(f"Warning: Segments on {side_name} are too wide for the side.")
+                    print(
+                        f"Warning: Segments on {side_name} are too wide for the side."
+                    )
                     available_space = 0
 
                 # Gap calculation
@@ -81,8 +86,10 @@ class Layout:
                 current_offset = gap
                 for seg in even_segs:
                     start = side_start + current_offset
-                    end = start + seg.width_pixels - 1 # inclusive
-                    calculated.append(CalculatedSegment(seg.name, start, end, side_name))
+                    end = start + seg.width_pixels - 1  # inclusive
+                    calculated.append(
+                        CalculatedSegment(seg.name, start, end, side_name)
+                    )
                     current_offset += seg.width_pixels + gap
 
             # Handle "center"
@@ -103,6 +110,7 @@ class Layout:
                 calculated.append(CalculatedSegment(seg.name, start, end, side_name))
 
         return calculated
+
 
 @dataclass
 class Table:

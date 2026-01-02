@@ -11,19 +11,39 @@ try:
     from rpi_ws281x import Color, PixelStrip
 except ImportError:
     print("Warning: rpi_ws281x not found. Using Mock objects.")
+
     class PixelStrip:
-        def __init__(self, num, pin, freq_hz=800000, dma=10, invert=False, brightness=255, channel=0):
+        def __init__(
+            self,
+            num,
+            pin,
+            freq_hz=800000,
+            dma=10,
+            invert=False,
+            brightness=255,
+            channel=0,
+        ):
             self.num = num
-        def begin(self): pass
-        def show(self): pass
-        def setPixelColor(self, n, color): pass
-        def getPixelColorRGBW(self, n): return (0,0,0,0)
+
+        def begin(self):
+            pass
+
+        def show(self):
+            pass
+
+        def setPixelColor(self, n, color):
+            pass
+
+        def getPixelColorRGBW(self, n):
+            return (0, 0, 0, 0)
 
     def Color(r, g, b, w=0):
         return (w << 24) | (r << 16) | (g << 8) | b
 
+
 from .animations import Animation, Blink, Chase, FadeInOut, Flare, Rainbow
 from .config import ConfigManager
+from .patterns import Solid
 from .pixel import Colors, Pixel
 from .strip import StripSegment
 from .table import TablePosition
@@ -34,7 +54,8 @@ ANIMATION_MAP = {
     "FadeInOut": FadeInOut,
     "Flare": Flare,
     "Blink": Blink,
-    "Rainbow": Rainbow
+    "Rainbow": Rainbow,
+    "Solid": Solid,
 }
 
 COLOR_MAP = {
@@ -53,29 +74,43 @@ COLOR_MAP = {
     "GOLD": Colors.GOLD,
     "PINK": Colors.PINK,
     "TEAL": Colors.TEAL,
-    "LIME": Colors.LIME
+    "LIME": Colors.LIME,
 }
+
 
 class Controller:
     def __init__(self, config_path: str):
         self.config_manager = ConfigManager(config_path)
-        self.config = self.config_manager.data # Direct access for legacy keys like key_bindings
+        self.config = (
+            self.config_manager.data
+        )  # Direct access for legacy keys like key_bindings
 
         # LED Strip Configuration (Defaults, could be in config)
-        self.LED_COUNT = 300      # Number of LED pixels.
-        self.LED_PIN = 18      # GPIO pin connected to the pixels (18 uses PWM!).
+        self.LED_COUNT = 300  # Number of LED pixels.
+        self.LED_PIN = 18  # GPIO pin connected to the pixels (18 uses PWM!).
         self.LED_FREQ_HZ = 800000  # LED signal frequency in hertz (usually 800khz)
-        self.LED_DMA = 10      # DMA channel to use for generating signal (try 10)
+        self.LED_DMA = 10  # DMA channel to use for generating signal (try 10)
         self.LED_BRIGHTNESS = 255  # Set to 0 for darkest and 255 for brightest
-        self.LED_INVERT = False   # True to invert the signal (when using NPN transistor level shift)
-        self.LED_CHANNEL = 0       # set to '1' for GPIOs 13, 19, 41, 45 or 53
+        self.LED_INVERT = (
+            False  # True to invert the signal (when using NPN transistor level shift)
+        )
+        self.LED_CHANNEL = 0  # set to '1' for GPIOs 13, 19, 41, 45 or 53
 
-        self.strip = PixelStrip(self.LED_COUNT, self.LED_PIN, self.LED_FREQ_HZ,
-                                self.LED_DMA, self.LED_INVERT, self.LED_BRIGHTNESS, self.LED_CHANNEL)
+        self.strip = PixelStrip(
+            self.LED_COUNT,
+            self.LED_PIN,
+            self.LED_FREQ_HZ,
+            self.LED_DMA,
+            self.LED_INVERT,
+            self.LED_BRIGHTNESS,
+            self.LED_CHANNEL,
+        )
         self.strip.begin()
 
         self.segments: Dict[str, StripSegment] = {}
-        self.queues: Dict[str, List[Animation]] = {} # Target -> List of queued animations
+        self.queues: Dict[
+            str, List[Animation]
+        ] = {}  # Target -> List of queued animations
         self.running = True
 
         self._setup_segments()
@@ -107,12 +142,12 @@ class Controller:
             return
 
         # Fallback to legacy layout list
-        if 'layout' in self.config:
+        if "layout" in self.config:
             print("Loading segments from legacy layout list.")
-            for item in self.config['layout']:
-                pos_name = item['position']
-                start = item['start']
-                end = item['end']
+            for item in self.config["layout"]:
+                pos_name = item["position"]
+                start = item["start"]
+                end = item["end"]
 
                 try:
                     table_pos = TablePosition[pos_name]
@@ -137,19 +172,19 @@ class Controller:
                 if v in COLOR_MAP:
                     parsed[k] = COLOR_MAP[v]
                 else:
-                    parsed[k] = v # Assume raw int or handled elsewhere
+                    parsed[k] = v  # Assume raw int or handled elsewhere
             else:
                 parsed[k] = v
         return parsed
 
     def handle_command(self, key: str):
         """Execute command based on key binding."""
-        if key not in self.config['key_bindings']:
+        if key not in self.config["key_bindings"]:
             return
 
-        cmd = self.config['key_bindings'][key]
-        action = cmd.get('action')
-        target_name = cmd.get('target')
+        cmd = self.config["key_bindings"][key]
+        action = cmd.get("action")
+        target_name = cmd.get("target")
 
         match action:
             case "quit":
@@ -174,14 +209,14 @@ class Controller:
 
             case "trigger":
                 if target_name in self.queues and self.queues[target_name]:
-                     anim = self.queues[target_name].pop(0)
-                     if target_name in self.segments:
-                         print(f"Triggering {type(anim).__name__} on {target_name}")
-                         anim.apply(self.segments[target_name].pixels)
+                    anim = self.queues[target_name].pop(0)
+                    if target_name in self.segments:
+                        print(f"Triggering {type(anim).__name__} on {target_name}")
+                        anim.apply(self.segments[target_name].pixels)
 
             case "queue" | "immediate" as act:
-                anim_name = cmd.get('animation')
-                params = self._parse_params(cmd.get('params', {}))
+                anim_name = cmd.get("animation")
+                params = self._parse_params(cmd.get("params", {}))
 
                 if anim_name not in ANIMATION_MAP:
                     print(f"Unknown animation: {anim_name}")
@@ -231,6 +266,60 @@ class Controller:
             # Control framerate (e.g., 50ms = 20fps)
             time.sleep(0.05)
 
+    def start_animation_thread(self):
+        """Start the animation loop in a separate daemon thread."""
+        t = threading.Thread(target=self.animation_loop, daemon=True)
+        t.start()
+        return t
+
+    def apply_animation(self, target_name: str, anim_name: str, params: dict = None):
+        """Apply an animation immediately to a target."""
+        if params is None:
+            params = {}
+
+        parsed_params = self._parse_params(params)
+
+        if anim_name not in ANIMATION_MAP:
+            print(f"Unknown animation: {anim_name}")
+            return False
+
+        if target_name not in self.segments:
+            print(f"Unknown segment: {target_name}")
+            return False
+
+        anim_class = ANIMATION_MAP[anim_name]
+        animation = anim_class(**parsed_params)
+
+        print(f"Applying {anim_name} immediately to {target_name}")
+        animation.apply(self.segments[target_name].pixels)
+        return True
+
+    def clear_segment(self, target_name: str):
+        if target_name == "ALL":
+            for seg in self.segments.values():
+                seg.clear()
+        elif target_name in self.segments:
+            self.segments[target_name].clear()
+
+    def set_color_range(self, start: int, end: int, color_val: int):
+        """Set a range of raw pixels to a color."""
+        # This is a raw operation, might override segment animations temporarily
+        # until next frame if animations are active.
+        # But if no animation is active on those pixels, it sticks.
+        # Actually, segment.animate() might overwrite this if an animation is running.
+        # So we should probably find which segment owns these pixels and apply a Solid pattern?
+        # Or just write to strip and hope no animation overwrites it.
+        # Given the architecture, it's safer to apply a Solid pattern to the relevant pixels
+        # if we want it to persist.
+        # But for "Select available pixels as a range", it implies bypassing segments?
+        # Let's just write to the strip for now, assuming the user knows what they are doing.
+        # However, the animation loop calls strip.show() every frame.
+        # If we just setPixelColor, it will be shown on next frame.
+        # BUT if a segment overlaps and has an animation, it will overwrite.
+        for i in range(start, end + 1):
+            if 0 <= i < self.LED_COUNT:
+                self.strip.setPixelColor(i, color_val)
+
     def run(self):
         # Start input listener in separate thread so animation doesn't block
         input_thread = threading.Thread(target=self.input_loop)
@@ -247,6 +336,7 @@ class Controller:
         for seg in self.segments.values():
             seg.clear()
         self.strip.show()
+
 
 if __name__ == "__main__":
     c = Controller("config.json")

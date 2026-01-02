@@ -1,34 +1,61 @@
 {
     "layout": [
-        {"position": "GAMEMASTER", "start": 0, "end": 29},
-        {"position": "WALL_1", "start": 30, "end": 59},
-        {"position": "WALL_2", "start": 60, "end": 89},
-        {"position": "WINDOW", "start": 90, "end": 119}
+        {
+            "position": "GAMEMASTER",
+            "start": 0,
+            "end": 29
+        },
+        {
+            "position": "WALL_1",
+            "start": 30,
+            "end": 59
+        },
+        {
+            "position": "WALL_2",
+            "start": 60,
+            "end": 89
+        },
+        {
+            "position": "WINDOW",
+            "start": 90,
+            "end": 119
+        }
     ],
     "key_bindings": {
         "1": {
             "action": "queue",
             "target": "GAMEMASTER",
             "animation": "Chase",
-            "params": {"color": "RED", "tail_length": 5}
+            "params": {
+                "color": "RED",
+                "tail_length": 5
+            }
         },
         "2": {
             "action": "queue",
             "target": "GAMEMASTER",
             "animation": "Blink",
-            "params": {"color": "GREEN", "duration": 5}
+            "params": {
+                "color": "GREEN",
+                "duration": 5
+            }
         },
         "3": {
             "action": "queue",
             "target": "WALL_1",
             "animation": "FadeInOut",
-            "params": {"color": "BLUE", "duration": 20}
+            "params": {
+                "color": "BLUE",
+                "duration": 20
+            }
         },
         "4": {
             "action": "queue",
             "target": "WINDOW",
             "animation": "Rainbow",
-            "params": {"speed": 5}
+            "params": {
+                "speed": 5
+            }
         },
         "space": {
             "action": "trigger_all",
@@ -41,5 +68,91 @@
         "q": {
             "action": "quit"
         }
-    }
+    },
+    "tables": {
+        "primary": {
+            "width": 2.0,
+            "length": 1.5,
+            "ppm": 60,
+            "sides": [
+                {
+                    "name": "side_wall",
+                    "length": 2.0,
+                    "order": 0
+                },
+                {
+                    "name": "window",
+                    "length": 1.5,
+                    "order": 1
+                },
+                {
+                    "name": "room",
+                    "length": 2.0,
+                    "order": 2
+                },
+                {
+                    "name": "back_wall",
+                    "length": 1.5,
+                    "order": 3
+                }
+            ]
+        }
+    },
+    "layouts": {
+        "6_player": {
+            "table": "primary",
+            "segments": [
+                {
+                    "name": "player_1",
+                    "side": "side_wall",
+                    "width": 50,
+                    "strategy": "absolute",
+                    "order": 0,
+                    "offset": 5
+                },
+                {
+                    "name": "player_2",
+                    "side": "side_wall",
+                    "width": 50,
+                    "strategy": "absolute",
+                    "order": 0,
+                    "offset": 65
+                },
+                {
+                    "name": "player_3",
+                    "side": "window",
+                    "width": 50,
+                    "strategy": "center",
+                    "order": 0,
+                    "offset": 0
+                },
+                {
+                    "name": "player_4",
+                    "side": "room",
+                    "width": 50,
+                    "strategy": "even",
+                    "order": 0,
+                    "offset": 0
+                },
+                {
+                    "name": "player_5",
+                    "side": "room",
+                    "width": 50,
+                    "strategy": "even",
+                    "order": 1,
+                    "offset": 0
+                },
+                {
+                    "name": "master",
+                    "side": "back_wall",
+                    "width": 75,
+                    "strategy": "center",
+                    "order": 0,
+                    "offset": 0
+                }
+            ]
+        }
+    },
+    "active_table": "primary",
+    "active_layout": "6_player"
 }

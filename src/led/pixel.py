@@ -2,7 +2,35 @@
 
 from dataclasses import dataclass, field
 
-from rpi_ws281x import RGBW, Color, PixelStrip
+try:
+    from rpi_ws281x import RGBW, Color, PixelStrip
+except ImportError:
+
+    def RGBW(r=0, g=0, b=0, w=0):
+        return (r << 16) | (g << 8) | b | (w << 24)
+
+    def Color(r=0, g=0, b=0, w=0):
+        return (r << 16) | (g << 8) | b | (w << 24)
+
+    class PixelStrip:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def getPixelColor(self, idx):
+            return 0, 0, 0
+
+        def getPixelColorRGBW(self, idx):
+            return 0, 0, 0, 0
+
+        def setPixelColor(self, idx, color):
+            pass
+
+        def show(self):
+            pass
+
+        def numPixels(self):
+            return 0
+
 
 from .patterns import Pattern
 
@@ -32,7 +60,7 @@ class Pixel:
     strip: PixelStrip
     idx: int
     _current: int = field(init=False, repr=False, default=0)
-    _steps: list[RGBW] = field(init=False, repr=False, default=[])
+    _steps: list[int] = field(init=False, repr=False, default_factory=list)
     _step_num: int = field(init=False, repr=False, default=0)
     _active: bool = field(init=False, repr=False, default=False)
 
@@ -48,10 +76,9 @@ class Pixel:
                 loop_count: how many times to loop the pattern, default 1
         """
         if self._active:
-            print('cannot add pattern while active')
+            print("cannot add pattern while active")
             return
-        self._steps += pattern.generate(self._current,
-                                        kwargs.get('num_loops', 1))
+        self._steps += pattern.generate(self._current, kwargs.get("num_loops", 1))
 
     def reset(self):
         self._active = False
@@ -82,4 +109,4 @@ class Pixel:
 
     def __str__(self) -> str:
         r, g, b, w = self.strip.getPixelColorRGBW(self.idx)
-        return f'LED {self.idx}: RGBW({r}, {g}, {b}, {w})'
+        return f"LED {self.idx}: RGBW({r}, {g}, {b}, {w})"

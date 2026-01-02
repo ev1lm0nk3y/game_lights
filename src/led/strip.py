@@ -6,8 +6,12 @@ try:
     from rpi_ws281x import Color, PixelStrip
 except ImportError:
     # Mock for non-RPi environments
-    class PixelStrip: pass
-    def Color(r, g, b, w=0): return 0
+    class PixelStrip:
+        pass
+
+    def Color(r, g, b, w=0):
+        return 0
+
 
 from .table import TablePosition
 
@@ -27,7 +31,7 @@ class StripSegment:
                     next(pixel)
                     pixel.strip.setPixelColor(pixel.idx, pixel._current)
                 except StopIteration:
-                    pass # Pixel finished its pattern
+                    pass  # Pixel finished its pattern
 
     def clear(self):
         """Turn off all pixels in this segment."""

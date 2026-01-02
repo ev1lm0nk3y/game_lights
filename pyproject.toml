@@ -18,3 +18,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/led", "src/cli"]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.1.0",
+]

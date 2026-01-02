@@ -1,0 +1,23 @@
+[Unit]
+Description=Game Lights LED Controller
+After=network.target
+
+[Service]
+# User/Group: Run as root for GPIO access (required by rpi_ws281x)
+User=root
+Group=root
+
+# Paths: Adjust these to match your installation
+WorkingDirectory=/opt/game-lights
+# Assuming installed via uv or pip in a venv, or just running from source with uv
+ExecStart=/usr/local/bin/uv run game-lights run
+
+# Restart on crash
+Restart=on-failure
+RestartSec=5s
+
+# Environment variables
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

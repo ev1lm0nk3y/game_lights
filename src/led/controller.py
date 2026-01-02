@@ -23,6 +23,7 @@ except ImportError:
         return (w << 24) | (r << 16) | (g << 8) | b
 
 from .animations import Animation, Blink, Chase, FadeInOut, Flare, Rainbow
+from .config import ConfigManager
 from .pixel import Colors, Pixel
 from .strip import StripSegment
 from .table import TablePosition
@@ -57,8 +58,8 @@ COLOR_MAP = {
 
 class Controller:
     def __init__(self, config_path: str):
-        with open(config_path, 'r') as f:
-            self.config = json.load(f)
+        self.config_manager = ConfigManager(config_path)
+        self.config = self.config_manager.data # Direct access for legacy keys like key_bindings
 
         # LED Strip Configuration (Defaults, could be in config)
         self.LED_COUNT = 300      # Number of LED pixels.
@@ -81,27 +82,52 @@ class Controller:
 
     def _setup_segments(self):
         """Initialize segments from config."""
-        for item in self.config['layout']:
-            pos_name = item['position']
-            start = item['start']
-            end = item['end']
 
-            # Map string to Enum
-            try:
-                table_pos = TablePosition[pos_name]
-            except KeyError:
-                print(f"Unknown TablePosition: {pos_name}")
-                continue
+        # Try new rich config first
+        calculated_segments = self.config_manager.get_active_configuration()
 
-            segment = StripSegment(start, end, table_pos)
+        if calculated_segments:
+            print(f"Loading {len(calculated_segments)} segments from active layout.")
+            for calc_seg in calculated_segments:
+                # Map arbitrary side name to a TablePosition if possible (for backward compat) or custom
+                try:
+                    table_pos = TablePosition[calc_seg.side_name.upper()]
+                except KeyError:
+                    table_pos = TablePosition.NO_SEAT
 
-            # Initialize Pixels for this segment
-            for i in range(start, end + 1):
-                p = Pixel(self.strip, i)
-                segment.pixels.append(p)
+                segment = StripSegment(calc_seg.start_led, calc_seg.end_led, table_pos)
 
-            self.segments[pos_name] = segment
-            self.queues[pos_name] = []
+                # Initialize Pixels
+                for i in range(calc_seg.start_led, calc_seg.end_led + 1):
+                    p = Pixel(self.strip, i)
+                    segment.pixels.append(p)
+
+                self.segments[calc_seg.name] = segment
+                self.queues[calc_seg.name] = []
+            return
+
+        # Fallback to legacy layout list
+        if 'layout' in self.config:
+            print("Loading segments from legacy layout list.")
+            for item in self.config['layout']:
+                pos_name = item['position']
+                start = item['start']
+                end = item['end']
+
+                try:
+                    table_pos = TablePosition[pos_name]
+                except KeyError:
+                    print(f"Unknown TablePosition: {pos_name}")
+                    continue
+
+                segment = StripSegment(start, end, table_pos)
+
+                for i in range(start, end + 1):
+                    p = Pixel(self.strip, i)
+                    segment.pixels.append(p)
+
+                self.segments[pos_name] = segment
+                self.queues[pos_name] = []
 
     def _parse_params(self, params: dict):
         """Convert string color names to int values in params."""
@@ -125,56 +151,55 @@ class Controller:
         action = cmd.get('action')
         target_name = cmd.get('target')
 
-        if action == "quit":
-            self.running = False
-            return
+        match action:
+            case "quit":
+                self.running = False
 
-        if action == "clear":
-            if target_name == "ALL":
-                for seg in self.segments.values():
-                    seg.clear()
-            elif target_name in self.segments:
-                self.segments[target_name].clear()
-            return
+            case "clear":
+                match target_name:
+                    case "ALL":
+                        for seg in self.segments.values():
+                            seg.clear()
+                    case _ if target_name in self.segments:
+                        self.segments[target_name].clear()
 
-        if action == "trigger_all":
-            # Trigger the next queued item for all segments
-            for name, queue in self.queues.items():
-                if queue:
-                    anim = queue.pop(0)
-                    if name in self.segments:
-                        print(f"Triggering {type(anim).__name__} on {name}")
-                        anim.apply(self.segments[name].pixels)
-            return
+            case "trigger_all":
+                # Trigger the next queued item for all segments
+                for name, queue in self.queues.items():
+                    if queue:
+                        anim = queue.pop(0)
+                        if name in self.segments:
+                            print(f"Triggering {type(anim).__name__} on {name}")
+                            anim.apply(self.segments[name].pixels)
 
-        if action == "trigger":
-            if target_name in self.queues and self.queues[target_name]:
-                 anim = self.queues[target_name].pop(0)
-                 if target_name in self.segments:
-                     print(f"Triggering {type(anim).__name__} on {target_name}")
-                     anim.apply(self.segments[target_name].pixels)
-            return
+            case "trigger":
+                if target_name in self.queues and self.queues[target_name]:
+                     anim = self.queues[target_name].pop(0)
+                     if target_name in self.segments:
+                         print(f"Triggering {type(anim).__name__} on {target_name}")
+                         anim.apply(self.segments[target_name].pixels)
 
-        if action in ["queue", "immediate"]:
-            anim_name = cmd.get('animation')
-            params = self._parse_params(cmd.get('params', {}))
+            case "queue" | "immediate" as act:
+                anim_name = cmd.get('animation')
+                params = self._parse_params(cmd.get('params', {}))
 
-            if anim_name not in ANIMATION_MAP:
-                print(f"Unknown animation: {anim_name}")
-                return
+                if anim_name not in ANIMATION_MAP:
+                    print(f"Unknown animation: {anim_name}")
+                    return
 
-            anim_class = ANIMATION_MAP[anim_name]
-            animation = anim_class(**params)
+                anim_class = ANIMATION_MAP[anim_name]
+                animation = anim_class(**params)
 
-            if action == "immediate":
-                if target_name in self.segments:
-                    print(f"Applying {anim_name} immediately to {target_name}")
-                    animation.apply(self.segments[target_name].pixels)
+                match act:
+                    case "immediate":
+                        if target_name in self.segments:
+                            print(f"Applying {anim_name} immediately to {target_name}")
+                            animation.apply(self.segments[target_name].pixels)
 
-            elif action == "queue":
-                if target_name in self.queues:
-                    print(f"Queueing {anim_name} for {target_name}")
-                    self.queues[target_name].append(animation)
+                    case "queue":
+                        if target_name in self.queues:
+                            print(f"Queueing {anim_name} for {target_name}")
+                            self.queues[target_name].append(animation)
 
     def input_loop(self):
         """Listen for keyboard input."""

@@ -1,7 +1,9 @@
 import argparse
 import sys
 
+from cli import setup
 from led import config
+from led.controller import Controller
 from led.strip import StripSegment
 from led.table import TablePosition
 
@@ -64,24 +66,62 @@ def program_mode():
     else:
         print("Configuration NOT saved.")
 
+def setup_mode():
+    while True:
+        print("\n=== Setup Menu ===")
+        print("1. Create/Update Table")
+        print("2. Create/Update Layout")
+        print("3. List Configuration")
+        print("4. Legacy Program Mode")
+        print("0. Exit")
+
+        choice = input("Select option: ")
+
+        match choice:
+            case "1":
+                setup.create_table_wizard()
+            case "2":
+                setup.create_layout_wizard()
+            case "3":
+                setup.list_config()
+            case "4":
+                program_mode()
+            case "0":
+                break
+            case _:
+                print("Invalid option.")
+
 def main():
     parser = argparse.ArgumentParser(description="Game Lights Controller")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # Program command
-    parser_program = subparsers.add_parser("program", help="Configure LED strip segments")
+    # Setup command
+    parser_setup = subparsers.add_parser("setup", help="Interactive setup for tables and layouts")
 
-    # Run command (placeholder)
+    # Program command (Legacy)
+    parser_program = subparsers.add_parser("program", help="Legacy: Configure LED strip segments")
+
+    # Run command
     parser_run = subparsers.add_parser("run", help="Run the light show")
 
     args = parser.parse_args()
 
-    if args.command == "program":
-        program_mode()
-    elif args.command == "run":
-        print("Run mode not implemented yet.")
-    else:
-        parser.print_help()
+    match args.command:
+        case "setup":
+            setup_mode()
+        case "program":
+            program_mode()
+        case "run":
+            try:
+                controller = Controller("config.json")
+                controller.run()
+            except KeyboardInterrupt:
+                pass
+            except Exception as e:
+                print(f"Error running controller: {e}")
+                sys.exit(1)
+        case _:
+            parser.print_help()
 
 if __name__ == "__main__":
     main()

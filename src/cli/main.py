@@ -4,6 +4,7 @@ import sys
 from InquirerPy import inquirer
 
 from cli import setup
+from cli.live_control import LiveControlWizard
 from led import config
 from led.controller import Controller
 from led.strip import StripSegment
@@ -114,14 +115,8 @@ def main():
         case "program":
             program_mode()
         case "run":
-            try:
-                controller = Controller("config.json")
-                controller.run()
-            except KeyboardInterrupt:
-                pass
-            except Exception as e:
-                print(f"Error running controller: {e}")
-                sys.exit(1)
+            wizard = LiveControlWizard("config.json")
+            wizard.run()
         case _:
             parser.print_help()
 

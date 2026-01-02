@@ -24,6 +24,7 @@ except ImportError:
 
 from .animations import Animation, Blink, Chase, FadeInOut, Flare, Rainbow
 from .config import ConfigManager
+from .patterns import Solid
 from .pixel import Colors, Pixel
 from .strip import StripSegment
 from .table import TablePosition
@@ -34,7 +35,8 @@ ANIMATION_MAP = {
     "FadeInOut": FadeInOut,
     "Flare": Flare,
     "Blink": Blink,
-    "Rainbow": Rainbow
+    "Rainbow": Rainbow,
+    "Solid": Solid
 }
 
 COLOR_MAP = {
@@ -230,6 +232,60 @@ class Controller:
 
             # Control framerate (e.g., 50ms = 20fps)
             time.sleep(0.05)
+
+    def start_animation_thread(self):
+        """Start the animation loop in a separate daemon thread."""
+        t = threading.Thread(target=self.animation_loop, daemon=True)
+        t.start()
+        return t
+
+    def apply_animation(self, target_name: str, anim_name: str, params: dict = None):
+        """Apply an animation immediately to a target."""
+        if params is None:
+            params = {}
+
+        parsed_params = self._parse_params(params)
+
+        if anim_name not in ANIMATION_MAP:
+            print(f"Unknown animation: {anim_name}")
+            return False
+
+        if target_name not in self.segments:
+             print(f"Unknown segment: {target_name}")
+             return False
+
+        anim_class = ANIMATION_MAP[anim_name]
+        animation = anim_class(**parsed_params)
+
+        print(f"Applying {anim_name} immediately to {target_name}")
+        animation.apply(self.segments[target_name].pixels)
+        return True
+
+    def clear_segment(self, target_name: str):
+        if target_name == "ALL":
+            for seg in self.segments.values():
+                seg.clear()
+        elif target_name in self.segments:
+            self.segments[target_name].clear()
+
+    def set_color_range(self, start: int, end: int, color_val: int):
+        """Set a range of raw pixels to a color."""
+        # This is a raw operation, might override segment animations temporarily
+        # until next frame if animations are active.
+        # But if no animation is active on those pixels, it sticks.
+        # Actually, segment.animate() might overwrite this if an animation is running.
+        # So we should probably find which segment owns these pixels and apply a Solid pattern?
+        # Or just write to strip and hope no animation overwrites it.
+        # Given the architecture, it's safer to apply a Solid pattern to the relevant pixels
+        # if we want it to persist.
+        # But for "Select available pixels as a range", it implies bypassing segments?
+        # Let's just write to the strip for now, assuming the user knows what they are doing.
+        # However, the animation loop calls strip.show() every frame.
+        # If we just setPixelColor, it will be shown on next frame.
+        # BUT if a segment overlaps and has an animation, it will overwrite.
+        for i in range(start, end + 1):
+             if 0 <= i < self.LED_COUNT:
+                 self.strip.setPixelColor(i, color_val)
 
     def run(self):
         # Start input listener in separate thread so animation doesn't block

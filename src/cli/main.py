@@ -1,5 +1,4 @@
 import argparse
-import sys
 
 from InquirerPy import inquirer
 
@@ -99,13 +98,13 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Setup command
-    parser_setup = subparsers.add_parser("setup", help="Interactive setup for tables and layouts")
+    _ = subparsers.add_parser("setup", help="Interactive setup for tables and layouts")
 
     # Program command (Legacy)
-    parser_program = subparsers.add_parser("program", help="Legacy: Configure LED strip segments")
+    _ = subparsers.add_parser("program", help="Legacy: Configure LED strip segments")
 
     # Run command
-    parser_run = subparsers.add_parser("run", help="Run the light show")
+    _ = subparsers.add_parser("run", help="Run the light show")
 
     args = parser.parse_args()
 

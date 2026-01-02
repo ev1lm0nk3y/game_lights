@@ -1,11 +1,11 @@
-import sys
+
 import time
 from dataclasses import dataclass, field
-from typing import Any, List, Union
+from typing import List
 
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
-from InquirerPy.validator import EmptyInputValidator, NumberValidator
+from InquirerPy.validator import NumberValidator
 
 from led.config import ConfigManager
 from led.controller import ANIMATION_MAP, COLOR_MAP, Controller
@@ -13,8 +13,8 @@ from led.controller import ANIMATION_MAP, COLOR_MAP, Controller
 
 @dataclass
 class Action:
-    type: str # "animation", "color"
-    target: str # segment name or "ALL" or "Range: x-y"
+    type: str  # "animation", "color"
+    target: str  # segment name or "ALL" or "Range: x-y"
     details: dict = field(default_factory=dict)
 
     def __str__(self):
@@ -24,14 +24,15 @@ class Action:
             return f"Color: {self.details['color_name']} on {self.target}"
         return "Unknown Action"
 
+
 class LiveControlWizard:
     def __init__(self, config_path: str = "config.json"):
         self.config_path = config_path
         self.cm = ConfigManager(config_path)
-        self.controller: Controller = None
+        self.controller: Controller
         self.pending_actions: List[Action] = []
 
-    def setup_controller(self):
+    def setup_controller(self) -> bool:
         # 1. Select Table/Layout if needed
         tables = self.cm.get_tables()
         if not tables:
@@ -41,10 +42,8 @@ class LiveControlWizard:
         # If multiple tables, select one
         t_name = self.cm.data.get("active_table")
         if len(tables) > 1 or not t_name:
-             t_name = inquirer.select(
-                message="Select Table:",
-                choices=list(tables.keys()),
-                default=t_name
+            t_name = inquirer.select(
+                message="Select Table:", choices=list(tables.keys()), default=t_name
             ).execute()
 
         # Select Layout
@@ -58,10 +57,8 @@ class LiveControlWizard:
 
         l_name = self.cm.data.get("active_layout")
         if len(table_layouts) > 1 or not l_name or l_name not in table_layouts:
-             l_name = inquirer.select(
-                message="Select Layout:",
-                choices=table_layouts,
-                default=l_name
+            l_name = inquirer.select(
+                message="Select Layout:", choices=table_layouts, default=l_name
             ).execute()
 
         # Activate and Save
@@ -90,12 +87,11 @@ class LiveControlWizard:
                     Choice("Execute", f"Execute Pending ({len(self.pending_actions)})"),
                     Choice("Clear Pending", "Clear Pending Actions"),
                     Choice("Reset Strip", "Reset/Clear Strip"),
-                    Choice("Exit", "Exit")
+                    Choice("Exit", "Exit"),
                 ]
 
                 choice = inquirer.select(
-                    message="Live Control:",
-                    choices=menu_choices
+                    message="Live Control:", choices=menu_choices
                 ).execute()
 
                 match choice:
@@ -129,33 +125,26 @@ class LiveControlWizard:
         segments = list(self.controller.segments.keys())
         segments.insert(0, "ALL")
 
-        target = inquirer.select(
-            message="Target Segment:",
-            choices=segments
-        ).execute()
+        target = inquirer.select(message="Target Segment:", choices=segments).execute()
 
         # Select Animation
         anim = inquirer.select(
-            message="Animation:",
-            choices=list(ANIMATION_MAP.keys())
+            message="Animation:", choices=list(ANIMATION_MAP.keys())
         ).execute()
 
         # (Optional) We could prompt for colors/params here
         # For now, just defaults or a simple color picker if the animation supports it?
         # Many animations take 'color' or 'colors'.
 
-        self.pending_actions.append(Action(
-            type="animation",
-            target=target,
-            details={"animation": anim}
-        ))
+        self.pending_actions.append(
+            Action(type="animation", target=target, details={"animation": anim})
+        )
         print(f"Queued: {anim} on {target}")
 
     def add_color_action(self):
         # Select Mode: Segment or Range
         mode = inquirer.select(
-            message="Target Type:",
-            choices=["Segment", "Manual Range"]
+            message="Target Type:", choices=["Segment", "Manual Range"]
         ).execute()
 
         target = ""
@@ -164,8 +153,7 @@ class LiveControlWizard:
         if mode == "Segment":
             segments = list(self.controller.segments.keys())
             target = inquirer.select(
-                message="Target Segment:",
-                choices=segments
+                message="Target Segment:", choices=segments
             ).execute()
             # We treat this as applying a "Solid" animation effectively,
             # or we could use a specific set_color method.
@@ -179,14 +167,14 @@ class LiveControlWizard:
                 message="Start Pixel:",
                 min_allowed=0,
                 max_allowed=self.controller.LED_COUNT - 1,
-                validate=NumberValidator()
+                validate=NumberValidator(),
             ).execute()
 
             end = inquirer.number(
                 message="End Pixel:",
                 min_allowed=int(start),
                 max_allowed=self.controller.LED_COUNT - 1,
-                validate=NumberValidator()
+                validate=NumberValidator(),
             ).execute()
 
             target = f"Range: {start}-{end}"
@@ -196,18 +184,15 @@ class LiveControlWizard:
 
         # Select Color
         color_name = inquirer.select(
-            message="Color:",
-            choices=list(COLOR_MAP.keys())
+            message="Color:", choices=list(COLOR_MAP.keys())
         ).execute()
 
         details["color_name"] = color_name
         details["color_val"] = COLOR_MAP[color_name]
 
-        self.pending_actions.append(Action(
-            type="color",
-            target=target,
-            details=details
-        ))
+        self.pending_actions.append(
+            Action(type="color", target=target, details=details)
+        )
         print(f"Queued: Color {color_name} on {target}")
 
     def execute_pending(self):
@@ -222,24 +207,24 @@ class LiveControlWizard:
                 # We might need to handle "ALL"
                 if action.target == "ALL":
                     for seg_name in self.controller.segments:
-                         self.controller.apply_animation(seg_name, action.details['animation'])
+                        self.controller.apply_animation(
+                            seg_name, action.details["animation"]
+                        )
                 else:
-                    self.controller.apply_animation(action.target, action.details['animation'])
+                    self.controller.apply_animation(
+                        action.target, action.details["animation"]
+                    )
 
             elif action.type == "color":
-                color_val = action.details['color_val']
-                if action.details['mode'] == "segment":
+                color_val = action.details["color_val"]
+                if action.details["mode"] == "segment":
                     # Use Solid animation which is now available
                     self.controller.apply_animation(
-                        action.target,
-                        "Solid",
-                        {"color": color_val}
+                        action.target, "Solid", {"color": color_val}
                     )
-                elif action.details['mode'] == "range":
+                elif action.details["mode"] == "range":
                     self.controller.set_color_range(
-                        action.details['start'],
-                        action.details['end'],
-                        color_val
+                        action.details["start"], action.details["end"], color_val
                     )
 
         self.pending_actions.clear()

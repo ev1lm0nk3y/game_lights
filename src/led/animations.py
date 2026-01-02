@@ -2,21 +2,28 @@ import math
 from dataclasses import dataclass, field
 from typing import List
 
-from rpi_ws281x import Color
-
 from .patterns import Blink as BlinkPattern
 from .patterns import Fade, Pattern, Solid
 from .patterns import Rainbow as RainbowPattern
 from .pixel import Colors, Pixel
 from .strip import StripSegment
 
+try:
+    from rpi_ws281x import Color
+except ImportError:
+
+    def Color(r=0, g=0, b=0, w=0):
+        return (r << 16) | (g << 8) | b | (w << 24)
+
 
 @dataclass
 class Animation:
     """Base class for Strip Animations."""
+
     def apply(self, pixels: List[Pixel]):
         """Apply the animation to the given pixels."""
         pass
+
 
 @dataclass
 class Chase(Animation):
@@ -42,7 +49,10 @@ class Chase(Animation):
             pixel.add_pattern(Fade(self.color, duration_frames=2))
 
             # The "Tail" (fade out)
-            pixel.add_pattern(Fade(0, duration_frames=self.tail_length * self.speed_delay))
+            pixel.add_pattern(
+                Fade(0, duration_frames=self.tail_length * self.speed_delay)
+            )
+
 
 @dataclass
 class FadeInOut(Animation):
@@ -56,12 +66,14 @@ class FadeInOut(Animation):
             # Fade Out
             pixel.add_pattern(Fade(0, duration_frames=self.duration))
 
+
 @dataclass
 class Flare(Animation):
     """
     Flare from center to edges.
     Starts with color1, transitions to color2 spreading from center.
     """
+
     color1: int = Colors.RED
     color2: int = Colors.YELLOW
     speed_delay: int = 2
@@ -78,13 +90,18 @@ class Flare(Animation):
             # Start with Color 1 (assuming currently 0 or we set it)
             # If we assume the strip is already Color 1, we just wait then fade.
             # If not, we set it to Color 1 first.
-            pixel.add_pattern(Solid(self.color1, duration_frames=1)) # Set initial state
+            pixel.add_pattern(
+                Solid(self.color1, duration_frames=1)
+            )  # Set initial state
 
             if delay > 0:
                 pixel.add_pattern(Solid(self.color1, duration_frames=delay))
 
             # Transition to Color 2
-            pixel.add_pattern(Fade(self.color2, duration_frames=self.transition_duration))
+            pixel.add_pattern(
+                Fade(self.color2, duration_frames=self.transition_duration)
+            )
+
 
 @dataclass
 class Blink(Animation):
@@ -93,7 +110,12 @@ class Blink(Animation):
 
     def apply(self, pixels: List[Pixel]):
         for pixel in pixels:
-            pixel.add_pattern(BlinkPattern(self.color, off_duration=self.duration, on_duration=self.duration))
+            pixel.add_pattern(
+                BlinkPattern(
+                    self.color, off_duration=self.duration, on_duration=self.duration
+                )
+            )
+
 
 @dataclass
 class Rainbow(Animation):

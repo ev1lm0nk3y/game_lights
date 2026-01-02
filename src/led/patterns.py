@@ -2,10 +2,17 @@ import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from rpi_ws281x import Color
+try:
+    from rpi_ws281x import Color
+except ImportError:
+
+    def Color(r=0, g=0, b=0, w=0):
+        return (r << 16) | (g << 8) | b | (w << 24)
 
 
-def interpolate_color(start_color: int, end_color: int, step: int, total_steps: int) -> int:
+def interpolate_color(
+    start_color: int, end_color: int, step: int, total_steps: int
+) -> int:
     """Interpolate between two colors."""
     if total_steps <= 0:
         return end_color
@@ -29,6 +36,7 @@ def interpolate_color(start_color: int, end_color: int, step: int, total_steps: 
 
     return (new_w << 24) | (new_r << 16) | (new_g << 8) | new_b
 
+
 class Pattern(ABC):
     """Base class for LED patterns."""
 
@@ -36,6 +44,7 @@ class Pattern(ABC):
     def generate(self, current_color: int, num_loops: int = 1) -> list[int]:
         """Generate a sequence of color steps."""
         pass
+
 
 @dataclass
 class Solid(Pattern):
@@ -47,6 +56,7 @@ class Solid(Pattern):
         for _ in range(num_loops):
             steps.extend([self.color] * self.duration_frames)
         return steps
+
 
 @dataclass
 class Fade(Pattern):
@@ -69,11 +79,14 @@ class Fade(Pattern):
             # Let's handle the single fade sequence.
             cycle_steps = []
             for i in range(1, self.duration_frames + 1):
-                cycle_steps.append(interpolate_color(start, self.target_color, i, self.duration_frames))
+                cycle_steps.append(
+                    interpolate_color(start, self.target_color, i, self.duration_frames)
+                )
             steps.extend(cycle_steps)
-            start = self.target_color # Next loop starts from target
+            start = self.target_color  # Next loop starts from target
 
         return steps
+
 
 @dataclass
 class Blink(Pattern):
@@ -89,9 +102,11 @@ class Blink(Pattern):
             steps.extend([self.off_color] * self.off_duration)
         return steps
 
+
 @dataclass
 class Rainbow(Pattern):
     """Cycles through rainbow colors."""
+
     duration_frames: int = 255  # Frames to complete one full cycle
 
     def generate(self, current_color: int, num_loops: int = 1) -> list[int]:

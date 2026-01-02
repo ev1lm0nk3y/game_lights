@@ -1,8 +1,10 @@
 import argparse
 import sys
-from game_lights.table import TablePosition
-from game_lights.strip import StripSegment
-from game_lights import config
+
+from led import config
+from led.strip import StripSegment
+from led.table import TablePosition
+
 
 def program_mode():
     print("=== LED Strip Configuration Mode ===")
@@ -17,7 +19,7 @@ def program_mode():
         try:
             start_led = int(input("Start LED ID: "))
             end_led = int(input("End LED ID: "))
-            
+
             if start_led > end_led:
                 print("Error: Start LED must be less than or equal to End LED.")
                 continue
@@ -26,9 +28,9 @@ def program_mode():
             for pos in TablePosition:
                 if pos != TablePosition.NO_SEAT:
                     print(f"{pos.value}: {pos.name}")
-            
+
             pos_input = input("Enter Position Name or ID: ").upper()
-            
+
             selected_pos = TablePosition.NO_SEAT
             try:
                 # Try parsing as integer ID first
@@ -41,15 +43,15 @@ def program_mode():
                 except KeyError:
                     print("Invalid position. Please try again.")
                     continue
-            
+
             segment = StripSegment(begin_led=start_led, end_led=end_led, table_position=selected_pos)
             segments.append(segment)
             print(f"Segment added: {segment}")
-            
+
             cont = input("Add another segment? (y/N): ").lower()
             if cont != 'y':
                 break
-                
+
         except ValueError:
             print("Invalid input. Please enter numbers for LEDs.")
         except KeyboardInterrupt:
